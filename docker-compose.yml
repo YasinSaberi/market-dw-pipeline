@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  my-database-service:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    cpuset: "0-3"
+    user: "0:0"
+    volumes:
+       - my-local-storage-pool:/var/opt/mssql/data
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${MY_DB_PASSWORD}
+      - MSSQL_PID=Express
+volumes:
+  my-local-storage-pool:
