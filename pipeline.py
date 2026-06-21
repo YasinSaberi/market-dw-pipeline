@@ -44,9 +44,17 @@ class DataTransformer:
 if __name__ == "__main__":
     API_BASE = "https://query1.finance.yahoo.com/v8/finance/chart"
     client = APIClient (base_url=API_BASE)
+    transformer = DataTransformer()
+
     print("Fetching data ... ")
     raw_payload = client.fetch_raw_data('AAPL')
-    print("Success! Raw payload type:", type(raw_payload))
-    print("Keys found in the response:", raw_payload.keys())
+    
+    if raw_payload:
+        print("Transforming data ...")
+        cleaned_df = transformer.transform_raw_payload(raw_payload)
+        print("\nCleaned Data Warehouse Matrix:")
+        print(cleaned_df.head())
+    
+    
     
     
