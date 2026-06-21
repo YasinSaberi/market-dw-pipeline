@@ -14,7 +14,13 @@ def fetch_raw_data(self, symbol):
         else:
             print(f"Error fetching data: {response.status_code}")
             return None
-    
+if __name__ == "__main__":
+    API_BASE = "https://query1.finance.yahoo.com/v8/finance/chart"
+    client = APIClient (base_url=API_BASE)
+    print("Fetching data ... ")
+    raw_payload = client.fetch_raw_data('AAPL')
+    print("Success! Raw payload type:", type(raw_payload))
+    print("Keys found in the response:", raw_payload.keys())
 class DataTransformer:
     def transform_raw_payload(self, raw_data):
         pass
