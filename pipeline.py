@@ -1,5 +1,6 @@
 import requests
-
+import pandas as pd
+from datetime import datetime
 class APIClient:
     def __init__(self, base_url):
         self.base_url = base_url
@@ -17,8 +18,29 @@ class APIClient:
         
 class DataTransformer:
     def transform_raw_payload(self, raw_data):
-        pass
-
+        
+        result = raw_data["chart"]["result"][0]
+        
+        ticker = result["meta"]["symbol"]
+        timestamps = result["timestamp"]
+        quote = result["indicators"]["quote"][0]
+        
+        extracted_data = {
+            "Ticker": ticker,
+            "ObservationDate" : timestamps,
+            "OpenPrice" : quote["open"],
+            "HighPrice" : quote["high"],
+            "LowPrice" : quote["low"],
+            "ClosePrice" : quote["close"],
+            "Volume" : quote["volume"],
+        }
+        
+        df = pd.DataFrame(extracted_data)
+        
+        df["ObservationDate"] = pd.to_datetime(df["ObservationDate"], unit="s").dt.date
+        df["IngestedAt"] = datetime.now()
+        return df
+        
 if __name__ == "__main__":
     API_BASE = "https://query1.finance.yahoo.com/v8/finance/chart"
     client = APIClient (base_url=API_BASE)
@@ -26,3 +48,5 @@ if __name__ == "__main__":
     raw_payload = client.fetch_raw_data('AAPL')
     print("Success! Raw payload type:", type(raw_payload))
     print("Keys found in the response:", raw_payload.keys())
+    
+    
