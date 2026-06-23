@@ -1,4 +1,4 @@
 requests
-yfinance
-datetime
+pandas
 sqlalchemy
+pyodbc
