@@ -83,15 +83,43 @@ class DatabaseManager():
         )
         
 if __name__ == "__main__":
-    API_BASE = "https://query1.finance.yahoo.com/v8/finance/chart"
-    client = APIClient (base_url=API_BASE)
-    transformer = DataTransformer()
+    pipeline_start = datetime.now()
 
-    print("Fetching data ... ")
-    raw_payload = client.fetch_raw_data('AAPL')
+    API_BASE = "https://query1.finance.yahoo.com/v8/finance/chart"
+    client = APIClient(API_BASE)
+    transformer = DataTransformer()
+    db_manager = DatabaseManager()
+
+    print("Step 1: Logging pipeline initialization...")
+    db_manager.write_log(start_time=pipeline_start, end_time=None, rows=0, status="RUNNING")
+
+    print("Step 2: Fetching live data...")
+    raw_payloud = client.fetch_raw_data('AAPL')
     
-    if raw_payload:
-        print("Transforming data ...")
-        cleaned_df = transformer.transform_raw_payload(raw_payload)
-        print("\nCleaned Data Warehouse Matrix:")
-        print(cleaned_df.head())
+    if raw_payloud:
+        print("Step 3: Transforming raw JSON payload into analytical data matrix...")
+        cleaned_df = transformer.transform_raw_payload(raw_payloud)
+        
+        try:
+            print("Step 4: Streaming records into containerized SQL Server...")
+            db_manager.insert_data(cleaned_df)
+            
+            print("Step 5: Logging completion status...")
+            db_manager.write_log(
+                start_time=pipeline_start,
+                end_time=datetime.now(),
+                rows=len(cleaned_df),
+                status="SUCCESS"
+            )
+            
+            print("Pipeline execution completed successfully!")
+        except Exception as e:
+            print(f"Database operation failed: {e}")
+            pipeline_end = datetime.now()
+            db_manager.write_log(
+                start_time=pipeline_start,
+                end_time=pipeline_end,
+                rows=0,
+                status="FAILED",
+                error_msg=str(e)
+            )   
