@@ -42,6 +42,7 @@ class DataTransformer:
         
         df["ObservationDate"] = pd.to_datetime(df["ObservationDate"], unit="s").dt.date
         df["IngestedAt"] = datetime.now()
+        df = df.drop_duplicates(subset=["ObservationDate", "Ticker"], keep="last")
         return df
     
 
@@ -83,22 +84,26 @@ class DatabaseManager():
         )
         
 if __name__ == "__main__":
-    pipeline_start = datetime.now()
-
+    input_symbol = input("Enter the symbol: ").strip().upper()
+    
+    print("Step 1: Fetching live data...")
     API_BASE = "https://query1.finance.yahoo.com/v8/finance/chart"
     client = APIClient(API_BASE)
-    transformer = DataTransformer()
-    db_manager = DatabaseManager()
-
-    print("Step 1: Logging pipeline initialization...")
-    db_manager.write_log(start_time=pipeline_start, end_time=None, rows=0, status="RUNNING")
-
-    print("Step 2: Fetching live data...")
-    raw_payloud = client.fetch_raw_data('AAPL')
+    raw_payload = client.fetch_raw_data(input_symbol)
     
-    if raw_payloud:
+    if not raw_payload or raw_payload.get("chart", {}).get("result") is None:
+        print(f"❌ Pipeline Aborted: Symbol '{input_symbol}' is invalid or returned no data.")
+    else:
+        pipeline_start = datetime.now()
+        
+        transformer = DataTransformer()
+        db_manager = DatabaseManager()
+        
+        print("Step 2: Logging pipeline initialization...")
+        db_manager.write_log(start_time=pipeline_start, end_time=None, rows=0, status="RUNNING")
+        
         print("Step 3: Transforming raw JSON payload into analytical data matrix...")
-        cleaned_df = transformer.transform_raw_payload(raw_payloud)
+        cleaned_df = transformer.transform_raw_payload(raw_payload)
         
         try:
             print("Step 4: Streaming records into containerized SQL Server...")
@@ -111,8 +116,8 @@ if __name__ == "__main__":
                 rows=len(cleaned_df),
                 status="SUCCESS"
             )
-            
             print("Pipeline execution completed successfully!")
+            
         except Exception as e:
             print(f"Database operation failed: {e}")
             pipeline_end = datetime.now()
@@ -122,4 +127,4 @@ if __name__ == "__main__":
                 rows=0,
                 status="FAILED",
                 error_msg=str(e)
-            )   
+            )
